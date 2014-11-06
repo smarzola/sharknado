@@ -1,6 +1,8 @@
 # sharknado
 
-sharknado is a super simple and super fast messaging server for the *Internet of Things* written in tornado and mongodb.
+[![Build Status](https://travis-ci.org/simock85/sharknado.svg)](https://travis-ci.org/simock85/sharknado)
+
+sharknado is a super simple and super fast messaging server for the *Internet of Things* written in tornado and mongodb, inspired by dweet.io.
 It adheres to the HAPI standard to provide web-based APIs that are machine ready but human/developer friendly.
 
 ## usage
