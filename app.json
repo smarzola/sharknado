@@ -1,0 +1,7 @@
+{
+    "name": "sharknado",
+    "description": "simple and fast messaging server for the Internet of Things",
+    "repository": "https://github.com/simock85/sharknado",
+    "keywords": ["internet of things", "iot", "messaging", "m2m", "tornado", "mongodb"],
+    "addons": ["mongolab"]
+}
