@@ -27,12 +27,12 @@ class TestHelpers(unittest.TestCase):
         self.assertEqual(sharknado.json_encode, escape.json_encode)
 
     def test_evt_response_content(self):
-        expected = {'this': 'succeeded', 'by': 'testing', 'the': 'events', 'with': ['spam', 'egg']}
+        expected = {'this': 'succeeded', 'by': 'testing', 'the': 'messages', 'with': ['spam', 'egg']}
         result = sharknado.make_evt_response(expected['by'], expected['with'], expected['this'])
         self.assertDictEqual(expected, result)
 
     def test_evt_response_order(self):
-        expected_items = [('this', 'succeeded'), ('by', 'testing'), ('the', 'events'), ('with', ['spam', 'egg'])]
+        expected_items = [('this', 'succeeded'), ('by', 'testing'), ('the', 'messages'), ('with', ['spam', 'egg'])]
         expected = dict(expected_items)
         result = sharknado.make_evt_response(expected['by'], expected['with'], expected['this'])
         self.assertEqual(expected_items, result.items())
@@ -46,7 +46,7 @@ class TestHelpers(unittest.TestCase):
 class TestServices(AsyncHTTPTestCase):
     def setUp(self):
         self._options = sharknado.options
-        sharknado.options = namedtuple('Options', ['mongo_uri', 'events_expire', 'cors_origin'])._make(
+        sharknado.options = namedtuple('Options', ['mongo_uri', 'messages_expire', 'cors_origin'])._make(
             ['mongodb://localhost:27017/sharknado_test', 0, '*'])
         self.db = sharknado.make_mongo_db()
         super(TestServices, self).setUp()
@@ -69,96 +69,96 @@ class TestServices(AsyncHTTPTestCase):
             url += ('?%s' % urllib.urlencode(params))
         return self.fetch(url, **kwargs)
 
-    def test_send_empty_event(self):
-        resp = self._get('/send/event/for/test')
+    def test_send_empty_message(self):
+        resp = self._get('/send/message/for/test')
         self.assertDictContainsSubset({'content': {}, 'thing': 'test'}, json.loads(resp.body)['with'])
 
         @gen.coroutine
         def check_count():
-            count = yield self.db.events.count()
+            count = yield self.db.messages.count()
             self.assertEqual(1, count)
 
         self.io_loop.run_sync(check_count)
 
-    def test_send_event_with_data(self):
+    def test_send_message_with_data(self):
         params = {'spam': 'egg'}
-        resp = self._get('/send/event/for/test', params=params)
+        resp = self._get('/send/message/for/test', params=params)
         self.assertEqual(params, json.loads(resp.body)['with']['content'])
 
         @gen.coroutine
         def check_stored():
-            stored = yield self.db.events.find_one()
+            stored = yield self.db.messages.find_one()
             self.assertEqual(params, stored['content'])
 
         self.io_loop.run_sync(check_stored)
 
-    def test_send_event_json_body(self):
+    def test_send_message_json_body(self):
         params = {'spam': 'egg'}
-        resp = self.fetch('/send/event/for/test', method='POST', body=json.dumps(params))
+        resp = self.fetch('/send/message/for/test', method='POST', body=json.dumps(params))
         self.assertEqual(params, json.loads(resp.body)['with']['content'])
 
-    def test_send_event_formencoded_failure(self):
+    def test_send_message_formencoded_failure(self):
         params = {'spam': 'egg'}
-        resp = self.fetch('/send/event/for/test', method='POST', body=urllib.urlencode(params))
+        resp = self.fetch('/send/message/for/test', method='POST', body=urllib.urlencode(params))
         self.assertEqual('failed', json.loads(resp.body)['this'])
 
-    def test_get_latest_event(self):
+    def test_get_latest_message(self):
         latest_params = None
         for idx in range(3):
             latest_params = {'spam': 'egg_%d' % idx}
-            self._get('/send/event/for/test', params=latest_params)
-        resp = self._get('/get/latest/event/for/test')
+            self._get('/send/message/for/test', params=latest_params)
+        resp = self._get('/get/latest/message/for/test')
         resp_json = json.loads(resp.body)
         self.assertEqual(1, len(resp_json['with']))
         self.assertEqual(latest_params, resp_json['with'][0]['content'])
 
-    def test_get_all_events(self):
+    def test_get_all_messages(self):
         latest_params = None
         for idx in range(3):
             latest_params = {'spam': 'egg_%d' % idx}
-            self._get('/send/event/for/test', params=latest_params)
-        resp = self._get('/get/events/for/test')
+            self._get('/send/message/for/test', params=latest_params)
+        resp = self._get('/get/messages/for/test')
         resp_json = json.loads(resp.body)
         self.assertEqual(3, len(resp_json['with']))
         self.assertEqual(latest_params, resp_json['with'][0]['content'])
 
-    def test_filter_event_days(self):
+    def test_filter_message_days(self):
         @gen.coroutine
-        def store_events():
+        def store_messages():
             delta_days = [1, 1, 2, 3, 5, 8]
             for days in delta_days:
                 created = datetime.utcnow() - timedelta(days=days)
-                event = {'thing': 'test', 'created': created, 'content': {}}
-                yield self.db.events.insert(event)
+                message = {'thing': 'test', 'created': created, 'content': {}}
+                yield self.db.messages.insert(message)
 
-        self.io_loop.run_sync(store_events)
+        self.io_loop.run_sync(store_messages)
 
-        resp = self._get('/get/events/for/test/past/4-days')
+        resp = self._get('/get/messages/for/test/past/4-days')
         self.assertEqual(4, len(json.loads(resp.body)['with']))
 
-        resp = self._get('/get/events/for/test/past/7-day')
+        resp = self._get('/get/messages/for/test/past/7-day')
         self.assertEqual(5, len(json.loads(resp.body)['with']))
 
     def test_default_filter_30_days(self):
         @gen.coroutine
-        def store_events():
-            event = {'thing': 'test', 'created': datetime.utcnow(), 'content': {}}
-            yield self.db.events.insert(event)
-            event = {'thing': 'test', 'created': datetime.utcnow() - timedelta(days=31), 'content': {}}
-            yield self.db.events.insert(event)
+        def store_messages():
+            message = {'thing': 'test', 'created': datetime.utcnow(), 'content': {}}
+            yield self.db.messages.insert(message)
+            message = {'thing': 'test', 'created': datetime.utcnow() - timedelta(days=31), 'content': {}}
+            yield self.db.messages.insert(message)
 
-        self.io_loop.run_sync(store_events)
+        self.io_loop.run_sync(store_messages)
 
-        resp = self._get('/get/events/for/test')
+        resp = self._get('/get/messages/for/test')
         self.assertEqual(1, len(json.loads(resp.body)['with']))
 
-    def test_event_counter(self):
+    def test_message_counter(self):
         for _ in range(3):
-            self._get('/send/event/for/test')
+            self._get('/send/message/for/test')
 
-        resp = self._get('/count/events/for/test')
+        resp = self._get('/count/messages/for/test')
         self.assertEqual(3, json.loads(resp.body)['with']['count'])
 
     def test_cors(self):
-        resp = self._get('/send/event/for/test', headers={'Origin': 'localhost'})
+        resp = self._get('/send/message/for/test', headers={'Origin': 'localhost'})
         self.assertEqual('*', resp.headers['Access-Control-Allow-Origin'])

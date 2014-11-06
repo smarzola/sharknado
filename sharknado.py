@@ -15,7 +15,7 @@ from urlparse import urlparse
 define("port", default='8000')
 define("processes", default=1)
 define("mongo_uri", default=None)
-define("events_expire", default=3600 * 24 * 30)
+define("messages_expire", default=3600 * 24 * 30)
 define("cors_origin", default="*")
 
 
@@ -29,10 +29,10 @@ def make_mongo_db():
     _connection = motor.MotorClient(uri)
     db = _connection[_dbname]
 
-    events_expire = int(options.events_expire)
-    if events_expire:
-        db.events.ensure_index('created', expireAfterSeconds=events_expire)
-    db.events.ensure_index([('name', ASCENDING), ('created', DESCENDING)])
+    messages_expire = int(options.messages_expire)
+    if messages_expire:
+        db.messages.ensure_index('created', expireAfterSeconds=messages_expire)
+    db.messages.ensure_index([('name', ASCENDING), ('created', DESCENDING)])
     db.counters.ensure_index('name')
     return db
 
@@ -56,7 +56,7 @@ escape.json_encode = json_encode
 def make_evt_response(action, things, status='succeeded'):
     return OrderedDict((('this', status),
                         ('by', action),
-                        ('the', 'events'),
+                        ('the', 'messages'),
                         ('with', things)))
 
 
@@ -74,8 +74,8 @@ class SendEvent(CorsRequestHandler):
     @gen.coroutine
     def get(self, name):
         content = parse_args(self.request.arguments)
-        event = yield self.store_event(name, content)
-        self.write(make_evt_response('sending', event))
+        message = yield self.store_message(name, content)
+        self.write(make_evt_response('sending', message))
 
     @gen.coroutine
     def post(self, name):
@@ -84,19 +84,19 @@ class SendEvent(CorsRequestHandler):
         except Exception as e:
             self.write(make_evt_response('sending', {'error': str(e)}, status='failed'))
         else:
-            event = yield self.store_event(name, content)
-            self.write(make_evt_response('sending', event))
+            message = yield self.store_message(name, content)
+            self.write(make_evt_response('sending', message))
 
     @gen.coroutine
-    def store_event(self, name, content):
+    def store_message(self, name, content):
         db = self.settings['db']
-        event = {'thing': name, 'created': datetime.utcnow(), 'content': content}
-        event['_id'] = yield db.events.insert(event)
+        message = {'thing': name, 'created': datetime.utcnow(), 'content': content}
+        message['_id'] = yield db.messages.insert(message)
         yield db.counters.update({'thing': name}, {'$inc': {'count': 1}}, upsert=True)
-        raise gen.Return(event)
+        raise gen.Return(message)
 
 
-class GetEvents(CorsRequestHandler):
+class GetMessages(CorsRequestHandler):
     def initialize(self, limit=None):
         self.limit = limit
 
@@ -104,12 +104,12 @@ class GetEvents(CorsRequestHandler):
     def get(self, name, days=30):
         db = self.settings['db']
         after = datetime.utcnow() - timedelta(days=int(days))
-        events = yield db.events.find({'thing': name, 'created': {'$gte': after}}) \
+        messages = yield db.messages.find({'thing': name, 'created': {'$gte': after}}) \
             .sort('created', DESCENDING).to_list(self.limit)
-        self.write(make_evt_response('getting', events))
+        self.write(make_evt_response('getting', messages))
 
 
-class CountEvents(CorsRequestHandler):
+class CountMessages(CorsRequestHandler):
     @gen.coroutine
     def get(self, name):
         db = self.settings['db']
@@ -118,11 +118,11 @@ class CountEvents(CorsRequestHandler):
 
 
 def make_app():
-    return Application([url(r"/send/event/for/([^/]+)/?", SendEvent),
-                        url(r"/get/latest/event/for/([^/]+)/?", GetEvents, dict(limit=1)),
-                        url(r"/get/events/for/([^/]+)/?", GetEvents),
-                        url(r"/get/events/for/([^/]+)/past/([0-9]+)-days?", GetEvents),
-                        url(r"/count/events/for/([^/]+)/?", CountEvents)])
+    return Application([url(r"/send/message/for/([^/]+)/?", SendEvent),
+                        url(r"/get/latest/message/for/([^/]+)/?", GetMessages, dict(limit=1)),
+                        url(r"/get/messages/for/([^/]+)/?", GetMessages),
+                        url(r"/get/messages/for/([^/]+)/past/([0-9]+)-days?", GetMessages),
+                        url(r"/count/messages/for/([^/]+)/?", CountMessages)])
 
 
 def main():
