@@ -5,8 +5,6 @@
 sharknado is a super simple and super fast messaging server for the *Internet of Things* built with tornado and mongodb, inspired by dweet.io.
 It adheres to the HAPI standard to provide web-based APIs that are machine ready but human/developer friendly.
 
-try it on heroku:
-
 [![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy)
 
 ## usage
