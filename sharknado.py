@@ -22,12 +22,12 @@ define("cors_origin", default="*")
 def make_mongo_db():
     uri = options.mongo_uri
     try:
-        _dbname = urlparse(uri).path[1:]
+        dbname = urlparse(uri).path[1:]
     except:
-        _dbname = 'sharknado'
+        dbname = 'sharknado'
 
-    _connection = motor.MotorClient(uri)
-    db = _connection[_dbname]
+    connection = motor.MotorClient(uri)
+    db = connection[dbname]
 
     messages_expire = int(options.messages_expire)
     if messages_expire:
