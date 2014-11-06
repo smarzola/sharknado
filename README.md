@@ -2,7 +2,7 @@
 
 [![Build Status](https://travis-ci.org/simock85/sharknado.svg)](https://travis-ci.org/simock85/sharknado)
 
-sharknado is a super simple and super fast messaging server for the *Internet of Things* written in tornado and mongodb, inspired by dweet.io.
+sharknado is a super simple and super fast messaging server for the *Internet of Things* built with tornado and mongodb, inspired by dweet.io.
 It adheres to the HAPI standard to provide web-based APIs that are machine ready but human/developer friendly.
 
 ## usage
@@ -102,7 +102,7 @@ you can also retrieve only the latest message
     
 ### count messages
 
-sharknado provides a fast messages counter endpoint
+sharknado provides a fast message counter endpoint
 
     /count/messages/for/my-thing-name
     
