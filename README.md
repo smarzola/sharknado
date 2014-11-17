@@ -2,8 +2,10 @@
 
 [![Build Status](https://travis-ci.org/simock85/sharknado.svg)](https://travis-ci.org/simock85/sharknado)
 
-sharknado is a super simple and super fast messaging server for the *Internet of Things* built with tornado and mongodb, inspired by dweet.io.
-It adheres to the HAPI standard to provide web-based APIs that are machine ready but human/developer friendly.
+sharknado is a super simple and super fast messaging server for the *Internet of Things* built with tornado and mongodb,
+inspired by dweet.io, compatible with python 2.7, 3.2+ and pypy
+
+It implements HAPI standards to provide web-based APIs that are machine ready but human/developer friendly.
 
 [![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy)
 
@@ -113,6 +115,6 @@ sharknado provides a fast message counter endpoint
 in no particular order:
 
 + message streaming
-+ secure locking
++ message locking
 + mongodb write concern customization
-+ support for python 3
++ ~~support for python 3~~
