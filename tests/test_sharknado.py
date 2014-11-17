@@ -2,12 +2,14 @@ from collections import namedtuple
 import json
 import sharknado
 import unittest
-import urllib
 from bson import ObjectId
 from datetime import datetime, timedelta
 from tornado import escape, gen
+from tornado.escape import to_unicode
 from tornado.ioloop import IOLoop
 from tornado.testing import AsyncHTTPTestCase
+from six.moves.urllib.parse import urlencode
+from six import iteritems
 
 
 class TestHelpers(unittest.TestCase):
@@ -35,7 +37,7 @@ class TestHelpers(unittest.TestCase):
         expected_items = [('this', 'succeeded'), ('by', 'testing'), ('the', 'messages'), ('with', ['spam', 'egg'])]
         expected = dict(expected_items)
         result = sharknado.make_evt_response(expected['by'], expected['with'], expected['this'])
-        self.assertEqual(expected_items, result.items())
+        self.assertEqual(expected_items, list(iteritems(result)))
 
     def test_args_parser(self):
         args = {'ham': ['ham'], 'spamegg': ['spam', 'egg']}
@@ -66,12 +68,12 @@ class TestServices(AsyncHTTPTestCase):
 
     def _get(self, url, params=None, **kwargs):
         if params:
-            url += ('?%s' % urllib.urlencode(params))
+            url += ('?%s' % urlencode(params))
         return self.fetch(url, **kwargs)
 
     def test_send_empty_message(self):
         resp = self._get('/send/message/for/test')
-        self.assertDictContainsSubset({'content': {}, 'thing': 'test'}, json.loads(resp.body)['with'])
+        self.assertDictContainsSubset({'content': {}, 'thing': 'test'}, json.loads(to_unicode(resp.body))['with'])
 
         @gen.coroutine
         def check_count():
@@ -83,7 +85,7 @@ class TestServices(AsyncHTTPTestCase):
     def test_send_message_with_data(self):
         params = {'spam': 'egg'}
         resp = self._get('/send/message/for/test', params=params)
-        self.assertEqual(params, json.loads(resp.body)['with']['content'])
+        self.assertEqual(params, json.loads(to_unicode(resp.body))['with']['content'])
 
         @gen.coroutine
         def check_stored():
@@ -95,12 +97,12 @@ class TestServices(AsyncHTTPTestCase):
     def test_send_message_json_body(self):
         params = {'spam': 'egg'}
         resp = self.fetch('/send/message/for/test', method='POST', body=json.dumps(params))
-        self.assertEqual(params, json.loads(resp.body)['with']['content'])
+        self.assertEqual(params, json.loads(to_unicode(resp.body))['with']['content'])
 
     def test_send_message_formencoded_failure(self):
         params = {'spam': 'egg'}
-        resp = self.fetch('/send/message/for/test', method='POST', body=urllib.urlencode(params))
-        self.assertEqual('failed', json.loads(resp.body)['this'])
+        resp = self.fetch('/send/message/for/test', method='POST', body=urlencode(params))
+        self.assertEqual('failed', json.loads(to_unicode(resp.body))['this'])
 
     def test_get_latest_message(self):
         latest_params = None
@@ -108,7 +110,7 @@ class TestServices(AsyncHTTPTestCase):
             latest_params = {'spam': 'egg_%d' % idx}
             self._get('/send/message/for/test', params=latest_params)
         resp = self._get('/get/latest/message/for/test')
-        resp_json = json.loads(resp.body)
+        resp_json = json.loads(to_unicode(resp.body))
         self.assertEqual(1, len(resp_json['with']))
         self.assertEqual(latest_params, resp_json['with'][0]['content'])
 
@@ -118,7 +120,7 @@ class TestServices(AsyncHTTPTestCase):
             latest_params = {'spam': 'egg_%d' % idx}
             self._get('/send/message/for/test', params=latest_params)
         resp = self._get('/get/messages/for/test')
-        resp_json = json.loads(resp.body)
+        resp_json = json.loads(to_unicode(resp.body))
         self.assertEqual(3, len(resp_json['with']))
         self.assertEqual(latest_params, resp_json['with'][0]['content'])
 
@@ -134,10 +136,10 @@ class TestServices(AsyncHTTPTestCase):
         self.io_loop.run_sync(store_messages)
 
         resp = self._get('/get/messages/for/test/past/4-days')
-        self.assertEqual(4, len(json.loads(resp.body)['with']))
+        self.assertEqual(4, len(json.loads(to_unicode(resp.body))['with']))
 
         resp = self._get('/get/messages/for/test/past/7-day')
-        self.assertEqual(5, len(json.loads(resp.body)['with']))
+        self.assertEqual(5, len(json.loads(to_unicode(resp.body))['with']))
 
     def test_default_filter_30_days(self):
         @gen.coroutine
@@ -150,14 +152,14 @@ class TestServices(AsyncHTTPTestCase):
         self.io_loop.run_sync(store_messages)
 
         resp = self._get('/get/messages/for/test')
-        self.assertEqual(1, len(json.loads(resp.body)['with']))
+        self.assertEqual(1, len(json.loads(to_unicode(resp.body))['with']))
 
     def test_message_counter(self):
         for _ in range(3):
             self._get('/send/message/for/test')
 
         resp = self._get('/count/messages/for/test')
-        self.assertEqual(3, json.loads(resp.body)['with']['count'])
+        self.assertEqual(3, json.loads(to_unicode(resp.body))['with']['count'])
 
     def test_cors(self):
         resp = self._get('/send/message/for/test', headers={'Origin': 'localhost'})

@@ -5,11 +5,13 @@ from collections import OrderedDict
 from datetime import datetime, timedelta
 from pymongo import ASCENDING, DESCENDING
 from tornado import gen, escape
+from tornado.escape import to_unicode
 from tornado.httpserver import HTTPServer
 from tornado.ioloop import IOLoop
 from tornado.options import parse_command_line, define, options
 from tornado.web import RequestHandler, Application, url
-from urlparse import urlparse
+from six.moves.urllib.parse import urlparse
+from six import iteritems
 
 
 define("port", default='8000')
@@ -61,7 +63,11 @@ def make_evt_response(action, things, status='succeeded'):
 
 
 def parse_args(args):
-    return {name: (arg[0] if len(arg) == 1 else arg) for name, arg in args.iteritems()}
+    parsed = {}
+    for name, args in iteritems(args):
+        args = [to_unicode(arg) for arg in args]
+        parsed[name] = args[0] if len(args) == 1 else args
+    return parsed
 
 
 class CorsRequestHandler(RequestHandler):
@@ -80,7 +86,7 @@ class SendEvent(CorsRequestHandler):
     @gen.coroutine
     def post(self, name):
         try:
-            content = json.loads(self.request.body)
+            content = json.loads(to_unicode(self.request.body))
         except Exception as e:
             self.write(make_evt_response('sending', {'error': str(e)}, status='failed'))
         else:
