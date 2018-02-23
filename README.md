@@ -1,6 +1,6 @@
 # sharknado
 
-[![Build Status](https://travis-ci.org/simock85/sharknado.svg)](https://travis-ci.org/simock85/sharknado)
+[![Build Status](https://travis-ci.org/smarzola/sharknado.svg)](https://travis-ci.org/smarzola/sharknado)
 
 sharknado is a super simple and super fast messaging server for the *Internet of Things* built with tornado and mongodb,
 inspired by dweet.io, compatible with python 2.7, 3.2+ and pypy
