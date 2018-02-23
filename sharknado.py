@@ -119,7 +119,7 @@ class CountMessages(CorsRequestHandler):
     @gen.coroutine
     def get(self, name):
         db = self.settings['db']
-        counter = yield db.counters.find_one({'thing': name}, fields={'_id': False})
+        counter = yield db.counters.find_one({'thing': name}, projection={'_id': False})
         self.write(make_evt_response('counting', counter))
 
 
