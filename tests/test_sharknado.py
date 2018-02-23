@@ -55,7 +55,7 @@ class TestServices(AsyncHTTPTestCase):
 
     def tearDown(self):
         sharknado.options = self._options
-        self.db.connection.drop_database(self.db.delegate.name)
+        self.db.client.drop_database(self.db.name)
         super(TestServices, self).tearDown()
 
     def get_app(self):
